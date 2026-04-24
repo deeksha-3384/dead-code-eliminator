@@ -1,253 +1,435 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RefineX - Dead Code Eliminator</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            background-color: #0a0a0a;
-            color: #ffffff;
-        }
-
-        navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 40px;
-            background-color: #111111;
-            border-bottom: 1px solid #333;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #a0a0ff;
-        }
-
-        .nav-links a {
-            color: #ffffff;
-            text-decoration: none;
-            margin-left: 30px;
-            font-size: 16px;
-        }
-
-        .nav-links a:hover {
-            color: #a0a0ff;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 100px 20px;
-        }
-
-        .hero h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #a0a0ff;
-        }
-
-        .hero p {
-            font-size: 18px;
-            color: #aaaaaa;
-            margin-bottom: 40px;
-        }
-
-        .upload-section {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #111111;
-            padding: 40px;
-            border-radius: 12px;
-            border: 1px solid #333;
-        }
-
-        textarea {
-            width: 100%;
-            height: 200px;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 14px;
-            resize: vertical;
-            margin-bottom: 20px;
-        }
-
-        .or-divider {
-            text-align: center;
-            color: #666;
-            margin: 15px 0;
-            font-size: 14px;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            background-color: #1a1a1a;
-            color: #aaaaaa;
-            border: 1px dashed #444;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            background-color: #a0a0ff;
-            color: #000000;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #8080ff;
-        }
-
-        #results {
-            max-width: 600px;
-            margin: 40px auto;
-            display: none;
-        }
-
-        #results h2 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            color: #a0a0ff;
-            text-align: center;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background-color: #1a1a1a;
-            padding: 12px;
-            text-align: left;
-            color: #a0a0ff;
-            border-bottom: 1px solid #333;
-        }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #222;
-            color: #cccccc;
-            font-size: 14px;
-        }
-
-        tr:hover {
-            background-color: #1a1a1a;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RefineX — Dead Code Eliminator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <navbar>
-        <div class="logo">RefineX</div>
-        <div class="nav-links">
-            <a href="#">Home</a>
-            <a href="#">Analyzer</a>
-            <a href="#">About</a>
+<noscript><style>body { cursor: auto !important; }</style></noscript>
+
+
+
+<!-- CURSOR -->
+<div id="cursor-ring"></div>
+<div id="cursor-dot"></div>
+<div id="cursor-trail">
+  <div class="trail-dot" id="t1"></div><div class="trail-dot" id="t2"></div>
+  <div class="trail-dot" id="t3"></div><div class="trail-dot" id="t4"></div>
+  <div class="trail-dot" id="t5"></div>
+</div>
+
+<!-- STAR BACKGROUND -->
+<canvas id="star-canvas"></canvas>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Scanning Dead Code...</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"><i class="fa fa-check-circle"></i><span id="toast-msg">Done!</span></div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-logo" onclick="navigate('home')">
+    <!-- RefineX Logo SVG -->
+    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#40b4ff"/>
+          <stop offset="50%" stop-color="#00d4ff"/>
+          <stop offset="100%" stop-color="#8b5cf6"/>
+        </linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Hexagon frame -->
+      <path d="M22 3L40 13V31L22 41L4 31V13L22 3Z" stroke="url(#lg1)" stroke-width="1.5" fill="rgba(64,180,255,0.04)" filter="url(#glow)"/>
+      <!-- X mark (dead code slash) -->
+      <line x1="15" y1="15" x2="29" y2="29" stroke="#40b4ff" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
+      <line x1="29" y1="15" x2="15" y2="29" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
+      <!-- Center sparkle dot -->
+      <circle cx="22" cy="22" r="2.5" fill="#00d4ff" filter="url(#glow)"/>
+      <!-- Orbit ring -->
+      <circle cx="22" cy="22" r="10" stroke="rgba(64,180,255,0.25)" stroke-width="0.8" stroke-dasharray="3 4"/>
+      <!-- Corner nodes -->
+      <circle cx="22" cy="3" r="1.5" fill="#40b4ff"/>
+      <circle cx="40" cy="31" r="1.5" fill="#8b5cf6"/>
+      <circle cx="4" cy="13" r="1.5" fill="#00d4ff"/>
+    </svg>
+    <span class="nav-logo-text">REFINEX</span>
+  </div>
+  <div class="nav-links">
+    <div class="nav-link active" id="nav-home" onclick="navigate('home')">Home</div>
+    <div class="nav-link" id="nav-analyzer" onclick="navigate('analyzer')">Analyzer</div>
+    <div class="nav-link" id="nav-results" onclick="navigate('results')">Results</div>
+    <div class="nav-link" id="nav-ai" onclick="navigate('ai')">AI</div>
+    <div class="nav-link" id="nav-about" onclick="navigate('about')">About</div>
+  </div>
+</nav>
+
+<div id="app">
+
+<!-- ══════════════════════════════════════════
+   HOME PAGE
+══════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- SPLIT HERO -->
+  <div class="home-split">
+    <!-- LEFT: Identity + meta -->
+    <div class="home-left">
+      <div class="home-eyebrow">
+        <div class="home-eyebrow-line"></div>
+        <div class="home-eyebrow-text">Static Analysis Engine &nbsp;·&nbsp; v2.0</div>
+      </div>
+
+      <div class="home-title-block">
+        <span class="home-version-tag">// refinex.core — initialized</span>
+        <h1 class="home-title">
+          Find dead code.<br>
+          Kill it.<br>
+          Ship <span class="accent">clean.</span>
+        </h1>
+      </div>
+
+      <div class="home-meta-row">
+        <div class="home-meta-item">
+          <span class="home-meta-val c">4</span>
+          <span class="home-meta-key">Languages</span>
         </div>
-    </navbar>
-
-    <div class="hero">
-        <h1>Dead Code Eliminator</h1>
-        <p>Upload or paste your code and find unused functions, variables and imports instantly</p>
-
-        <div class="upload-section">
-            <textarea id="codeInput" placeholder="Paste your Python code here..."></textarea>
-
-            <div class="or-divider">— OR —</div>
-
-            <input type="file" id="fileInput" accept=".py">
-
-            <button onclick="analyzeCode()">Analyze</button>
+        <div class="home-meta-item">
+          <span class="home-meta-val p">3</span>
+          <span class="home-meta-key">Issue Types</span>
         </div>
+        <div class="home-meta-item">
+          <span class="home-meta-val g">AST</span>
+          <span class="home-meta-key">Parse Engine</span>
+        </div>
+        <div class="home-meta-item">
+          <span class="home-meta-val" style="color:var(--orange)">AI</span>
+          <span class="home-meta-key">Explanations</span>
+        </div>
+      </div>
+
+      <div class="home-cta-row">
+        <button class="btn-primary" onclick="navigate('analyzer')">
+          <i class="fa fa-play"></i>
+          <span>Open Analyzer</span>
+          <span class="btn-glow"></span>
+        </button>
+        <button class="btn-secondary" onclick="navigate('about')">
+          <i class="fa fa-info-circle"></i>
+          <span>About RefineX</span>
+          <span class="btn-glow"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="pipeline-section">
+    <div class="pipeline-header">
+      <div class="pipeline-label">How it works</div>
+      <div class="pipeline-title">Four-stage analysis pipeline</div>
+    </div>
+    <div class="pipeline-track">
+      <div class="pipe-step">
+        <div class="pipe-num">01 / 04</div>
+        <div class="pipe-icon">📂</div>
+        <div class="pipe-name">Ingest</div>
+        <div class="pipe-desc">Upload a .py, .js, .java, or .cpp file — or paste code directly into the editor.</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">02 / 04</div>
+        <div class="pipe-icon">🌳</div>
+        <div class="pipe-name">AST Parse</div>
+        <div class="pipe-desc">Source is parsed into an abstract syntax tree. Every symbol, scope, and reference is indexed.</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">03 / 04</div>
+        <div class="pipe-icon">🔗</div>
+        <div class="pipe-name">Call Graph</div>
+        <div class="pipe-desc">A call graph is built. Unreachable nodes — functions, vars, imports with zero references — are flagged.</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">04 / 04</div>
+        <div class="pipe-icon">🤖</div>
+        <div class="pipe-name">AI Report</div>
+        <div class="pipe-desc">OpenAI explains each issue: what it is, why it's harmful, and exactly how to remove it.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETECTION TYPES -->
+  <div class="detect-section">
+    <div class="detect-intro">
+      <div class="detect-intro-label">Detection catalog</div>
+      <div class="detect-intro-title">Three categories of dead code</div>
+      <div class="detect-intro-sub">RefineX scans for each type across all supported languages using static analysis — no execution required.</div>
+      <button class="btn-primary" onclick="navigate('analyzer')" style="font-size:11px; padding:12px 24px;">
+        <i class="fa fa-arrow-right"></i><span>Try It Now</span>
+      </button>
+    </div>
+    <div class="detect-grid">
+      <div class="detect-row">
+        <span class="detect-tag fn">FUNCTION</span>
+        <span class="detect-row-name">old_loader()</span>
+        <span class="detect-row-desc">Defined but never called anywhere in scope</span>
+        <span class="detect-row-lang">PY · JS · JAVA · C++</span>
+      </div>
+      <div class="detect-row">
+        <span class="detect-tag fn">FUNCTION</span>
+        <span class="detect-row-name">legacyAuth()</span>
+        <span class="detect-row-desc">Zero call sites after last refactor</span>
+        <span class="detect-row-lang">JS · JAVA</span>
+      </div>
+      <div class="detect-row">
+        <span class="detect-tag va">VARIABLE</span>
+        <span class="detect-row-name">temp_result</span>
+        <span class="detect-row-desc">Assigned a value that is never read</span>
+        <span class="detect-row-lang">PY · JS · C++</span>
+      </div>
+      <div class="detect-row">
+        <span class="detect-tag va">VARIABLE</span>
+        <span class="detect-row-name">DEBUG_FLAG</span>
+        <span class="detect-row-desc">Declared but no downstream references</span>
+        <span class="detect-row-lang">PY · JAVA · C++</span>
+      </div>
+      <div class="detect-row">
+        <span class="detect-tag im">IMPORT</span>
+        <span class="detect-row-name">import sys</span>
+        <span class="detect-row-desc">Module imported, no attributes accessed</span>
+        <span class="detect-row-lang">PY · JS</span>
+      </div>
+      <div class="detect-row">
+        <span class="detect-tag im">IMPORT</span>
+        <span class="detect-row-name">from pathlib import Path</span>
+        <span class="detect-row-desc">Symbol imported but never referenced</span>
+        <span class="detect-row-lang">PY</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA STRIP -->
+  <div class="home-cta-strip">
+    <div class="home-cta-left">
+      <div class="home-cta-eyebrow">Ready to scan</div>
+      <div class="home-cta-heading">Paste your code or upload a file &rarr;</div>
+    </div>
+    <button class="btn-primary" onclick="navigate('analyzer')" style="font-size:12px; padding:15px 36px; flex-shrink:0;">
+      <i class="fa fa-rocket"></i><span>Launch Analyzer</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+   ANALYZER PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-analyzer">
+  <div class="analyzer-wrap">
+    <div class="section-label">Static Analysis</div>
+    <h1 class="page-title">Code Analyzer</h1>
+    <p class="page-sub">Upload a source file or paste code directly. RefineX will scan for dead, unreachable, and unused code.</p>
+
+    <div class="analyzer-options">
+      <!-- OPTION A: Upload -->
+      <div class="option-card selected" id="opt-upload" onclick="selectOption('upload')">
+        <div class="option-card-header">
+          <div class="option-num">A</div>
+          <div class="option-label">Upload File</div>
+        </div>
+        <div class="upload-zone" id="drop-zone">
+          <input type="file" class="file-input" id="file-input" accept=".py,.js,.java,.cpp,.cc,.cxx" onchange="handleFile(this)">
+          <div class="upload-zone-icon"><i class="fa fa-cloud-arrow-up"></i></div>
+          <div class="upload-zone-text">Drop your file here or <strong>click to browse</strong></div>
+          <div class="upload-zone-sub">.py &nbsp;·&nbsp; .js &nbsp;·&nbsp; .java &nbsp;·&nbsp; .cpp</div>
+        </div>
+        <div id="file-chosen"></div>
+      </div>
+
+      <!-- OPTION B: Paste -->
+      <div class="option-card" id="opt-paste" onclick="selectOption('paste')">
+        <div class="option-card-header">
+          <div class="option-num">B</div>
+          <div class="option-label">Paste & Type Code</div>
+          <span class="option-badge">Click to activate</span>
+        </div>
+        <p style="font-size:13px; color:var(--text2); margin-bottom: 12px;">Write or paste your source code directly. Auto-detects language from syntax.</p>
+        <div class="code-editor-wrap" id="editor-wrap">
+          <div class="code-editor-header">
+            <div class="editor-dots">
+              <div class="editor-dot red"></div>
+              <div class="editor-dot yellow"></div>
+              <div class="editor-dot green"></div>
+            </div>
+            <div class="lang-detect-badge" id="lang-badge">Awaiting input…</div>
+          </div>
+          <div class="code-scroll-area" id="code-scroll">
+            <div class="line-numbers" id="line-numbers">1</div>
+            <textarea id="code-input" placeholder="Paste your code here..." spellcheck="false" oninput="onCodeInput(this)" onscroll="syncScroll(this)"></textarea>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div id="results">
-        <h2>Results</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Name</th>
-                    <th>Message</th>
-                </tr>
-            </thead>
-            <tbody id="resultsBody">
-            </tbody>
-        </table>
+    <div class="analyzer-controls">
+      <div class="lang-select-wrap">
+        <select class="lang-select" id="lang-select">
+          <option value="auto">Auto Detect</option>
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+        </select>
+      </div>
+      <button class="btn-analyze" onclick="runAnalysis()">
+        <i class="fa fa-atom scan-icon"></i>
+        <span>Analyze Code</span>
+      </button>
+      <button class="btn-secondary" onclick="clearAll()">
+        <i class="fa fa-trash-can"></i><span>Clear</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   RESULTS PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-results">
+  <div class="results-wrap">
+    <div class="section-label">Analysis Complete</div>
+    <h1 class="page-title">Results</h1>
+    <p class="page-sub" id="results-summary-text">Scan complete. Dead code items identified below.</p>
+
+    <div class="results-summary">
+      <div class="summary-card total"><div class="summary-num" id="cnt-total">0</div><div class="summary-label">Total Issues</div></div>
+      <div class="summary-card functions"><div class="summary-num" id="cnt-func">0</div><div class="summary-label">Dead Functions</div></div>
+      <div class="summary-card vars"><div class="summary-num" id="cnt-var">0</div><div class="summary-label">Dead Variables</div></div>
+      <div class="summary-card imports"><div class="summary-num" id="cnt-import">0</div><div class="summary-label">Dead Imports</div></div>
     </div>
 
-    <script>
-        async function analyzeCode() {
-    const formData = new FormData();
-    const fileInput = document.getElementById("fileInput");
-    const codeInput = document.getElementById("codeInput").value;
+    <div class="results-toolbar">
+      <div class="section-label" style="margin:0">Dead Code Inventory</div>
+      <button class="btn-tool green" onclick="copyResults()"><i class="fa fa-clipboard"></i> Copy to Clipboard</button>
+      <button class="btn-tool" onclick="downloadPDF()"><i class="fa fa-file-pdf"></i> Export PDF</button>
+      <button class="btn-tool purple" onclick="navigate('analyzer')"><i class="fa fa-rotate-left"></i> Analyze Another</button>
+    </div>
 
-    if (fileInput.files.length > 0) {
-        formData.append("file", fileInput.files[0]);
-    } else if (codeInput.trim() !== "") {
-        const blob = new Blob([codeInput], { type: "text/plain" });
-        formData.append("file", blob, "pasted_code.py");
-    } else {
-        alert("Please upload a file or paste your code!");
-        return;
-    }
+    <div class="results-table-wrap">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th style="width:130px">Type</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th style="width:120px">Action</th>
+          </tr>
+        </thead>
+        <tbody id="results-body">
+          <tr><td colspan="4"><div class="empty-state"><i class="fa fa-satellite-dish"></i>No results yet. Run an analysis first.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
 
-    try {
-        const response = await fetch("/analyze", {
-            method: "POST",
-            body: formData
-        });
+    <div style="display:flex; gap: 12px; flex-wrap:wrap">
+      <button class="btn-primary" onclick="navigate('analyzer')" style="font-size:12px; padding:13px 30px;">
+        <i class="fa fa-plus"></i><span>New Analysis</span>
+      </button>
+    </div>
+  </div>
+</div>
 
-        const data = await response.json();
-        console.log("Response:", data);
-        const results = data.results;
+<!-- ══════════════════════════════════════════
+   AI EXPLANATION PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-ai">
+  <div class="ai-wrap">
+    <div class="back-btn" onclick="navigate('results')"><i class="fa fa-arrow-left"></i> Back to Results</div>
 
-        if (results.length === 0) {
-            alert("No dead code found!");
-            return;
-        }
+    <div class="section-label">AI Analysis</div>
+    <h1 class="page-title">AI Explanation</h1>
 
-        const tbody = document.getElementById("resultsBody");
-        tbody.innerHTML = "";
+    <div class="ai-header">
+      <div class="ai-icon">
+        <i class="fa fa-brain"></i>
+      </div>
+      <div class="ai-title-block">
+        <div class="ai-label">Analyzing</div>
+        <div class="ai-name" id="ai-item-name">Loading...</div>
+        <div class="ai-type" id="ai-item-badge">...</div>
+      </div>
+    </div>
 
-        results.forEach(item => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${item.type}</td>
-                <td>${item.name}</td>
-                <td>${item.message}</td>
-            `;
-            tbody.appendChild(row);
-        });
+    <div class="ai-cards" id="ai-cards">
+      <div class="ai-loading">
+        <div class="loader-ring" style="margin:0 auto 20px;width:60px;height:60px;"></div>
+        <p>Generating AI Explanation…</p>
+      </div>
+    </div>
 
-        document.getElementById("results").style.display = "block";
-        document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+  </div>
+</div>
 
-    } catch(err) {
-        console.log("Error:", err);
-        alert("Something went wrong: " + err);
-    }
-}
-    </script>
+<!-- ══════════════════════════════════════════
+   ABOUT PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="about-wrap">
+    <div class="section-label">About RefineX</div>
+    <h1 class="page-title">Dead Code Eliminator</h1>
+    <p class="page-sub">RefineX is an advanced static analysis tool that identifies unused code in your projects. Built with Python AST parsing and machine learning, it helps developers maintain clean, efficient codebases.</p>
 
+    <div class="about-hero">
+      <p class="about-desc">Eliminate dead code automatically. Improve performance, reduce bundle sizes, and keep your codebase clean with AI-powered analysis.</p>
+    </div>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar"><i class="fa fa-robot"></i></div>
+        <div class="team-name">RefineX AI</div>
+        <div class="team-role">Code Analysis Engine</div>
+        <div class="team-bio">Powered by advanced AST parsing and machine learning algorithms to detect dead code patterns.</div>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar"><i class="fa fa-code"></i></div>
+        <div class="team-name">Python Core</div>
+        <div class="team-role">Backend Processor</div>
+        <div class="team-bio">Built with Python's robust AST module for accurate static analysis across multiple programming languages.</div>
+      </div>
+    </div>
+
+    <div class="tech-stack-grid">
+      <div class="tech-card">
+        <div class="tech-card-icon"><i class="fa-brands fa-python"></i></div>
+        <div class="tech-card-name">Python</div>
+        <div class="tech-card-desc">Core analysis engine with AST parsing</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-icon"><i class="fa-brands fa-js"></i></div>
+        <div class="tech-card-name">JavaScript</div>
+        <div class="tech-card-desc">Interactive web interface</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-icon"><i class="fa fa-brain"></i></div>
+        <div class="tech-card-name">AI/ML</div>
+        <div class="tech-card-desc">Smart pattern recognition</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </body>
 </html>

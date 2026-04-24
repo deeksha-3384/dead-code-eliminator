@@ -17,21 +17,28 @@ def home():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-    
-    file = request.files["file"]
-    
-    if file.filename == "":
-        return jsonify({"error": "No file selected"}), 400
-    
-    if not file.filename.endswith(".py"):
-        return jsonify({"error": "Please upload a Python file only"}), 400
-    
-    source_code = file.read().decode("utf-8")
-    
-    results = analyze_code(source_code)
-    
+    source_code = None
+
+    if request.is_json:
+        data = request.get_json() or {}
+        source_code = data.get("code", "")
+        if not source_code:
+            return jsonify({"error": "No code provided"}), 400
+    else:
+        if "file" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+
+        source_code = file.read().decode("utf-8")
+
+    try:
+        results = analyze_code(source_code)
+    except Exception as exc:
+        return jsonify({"error": "Analysis failed", "details": str(exc)}), 500
+
     return jsonify({"results": results})
 
 @app.route("/explain", methods=["POST"])
