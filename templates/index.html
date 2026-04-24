@@ -72,6 +72,7 @@
     <div class="nav-link" id="nav-results" onclick="navigate('results')">Results</div>
     <div class="nav-link" id="nav-ai" onclick="navigate('ai')">AI</div>
     <div class="nav-link" id="nav-about" onclick="navigate('about')">About</div>
+    <div class="nav-link" id="nav-history" onclick="navigate('history'); loadHistory();">History</div>
   </div>
 </nav>
 
@@ -424,6 +425,90 @@
         <div class="tech-card-name">AI/ML</div>
         <div class="tech-card-desc">Smart pattern recognition</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   SIDE BY SIDE PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-sidebyside">
+  <div class="results-wrap">
+    <div class="back-btn" onclick="navigate('results')"><i class="fa fa-arrow-left"></i> Back to Results</div>
+    <div class="section-label">Code Diff</div>
+    <h1 class="page-title">Side by Side View</h1>
+    <p class="page-sub">Original code on the left. Dead code dimmed. Cleaned version on the right.</p>
+
+    <div class="sbs-wrap">
+      <div class="sbs-panel">
+        <div class="sbs-header">
+          <div class="sbs-title"><i class="fa fa-code"></i> Original Code</div>
+          <div class="sbs-badge red">Has Dead Code</div>
+        </div>
+        <div class="sbs-editor" id="sbs-original"></div>
+      </div>
+      <div class="sbs-panel">
+        <div class="sbs-header">
+          <div class="sbs-title"><i class="fa fa-check-circle"></i> Cleaned Code</div>
+          <div class="sbs-badge green">Dead Code Removed</div>
+        </div>
+        <div class="sbs-editor" id="sbs-cleaned"></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;">
+      <button class="btn-tool green" onclick="downloadCleaned()">
+        <i class="fa fa-download"></i> Download Cleaned File
+      </button>
+      <button class="btn-tool purple" onclick="navigate('results')">
+        <i class="fa fa-table"></i> Back to Results
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+   HISTORY PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-history">
+  <div class="results-wrap">
+    <div class="section-label">Scan History</div>
+    <h1 class="page-title">History Dashboard</h1>
+    <p class="page-sub">All your previous analyses. Click any row to view results.</p>
+
+    <div class="results-summary" style="margin-bottom:32px;">
+      <div class="summary-card total"><div class="summary-num" id="hist-total">0</div><div class="summary-label">Total Scans</div></div>
+      <div class="summary-card functions"><div class="summary-num" id="hist-avg-score">0</div><div class="summary-label">Avg Score</div></div>
+      <div class="summary-card vars"><div class="summary-num" id="hist-issues">0</div><div class="summary-label">Total Issues Found</div></div>
+      <div class="summary-card imports"><div class="summary-num" id="hist-clean">0</div><div class="summary-label">Clean Scans</div></div>
+    </div>
+
+    <div class="results-toolbar">
+      <div class="section-label" style="margin:0">Recent Analyses</div>
+      <button class="btn-tool green" onclick="loadHistory()">
+        <i class="fa fa-rotate"></i> Refresh
+      </button>
+      <button class="btn-tool purple" onclick="deleteSelectedHistory()">
+        <i class="fa fa-trash"></i> Delete Selected
+      </button>
+    </div>
+
+    <div class="results-table-wrap">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th style="width:48px"><input type="checkbox" id="history-select-all" onchange="toggleAllHistorySelection(this.checked)"></th>
+            <th>File</th>
+            <th>Score</th>
+            <th>Issues</th>
+            <th>Language</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="6"><div class="empty-state"><i class="fa fa-clock"></i>No history yet. Run your first analysis!</div></td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

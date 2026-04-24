@@ -94,7 +94,7 @@
 // ─────────────────────────────────────────────
 // NAVIGATION
 // ─────────────────────────────────────────────
-const pages = ['home','analyzer','results','ai','about'];
+const pages = ['home','analyzer','results','ai','about','sidebyside','history'];
 
 function getPageFromUrl(){
   const params = new URLSearchParams(window.location.search);
@@ -267,6 +267,9 @@ async function runAnalysis(){
     if(!response.ok) throw new Error('Server error: ' + response.status);
     const data = await response.json();
     hideLoader();
+    window._lastScore = data.score || 100;
+    currentCleanedCode = data.cleaned_code || '';
+    currentOriginalCode = data.original_code || '';
     renderResults(data.results || []);
     navigate('results');
   } catch(err){
@@ -333,6 +336,8 @@ function generateDemoResults(code, lang){
 // RESULTS
 // ─────────────────────────────────────────────
 let currentResults = [];
+let currentCleanedCode = '';
+let currentOriginalCode = '';
 
 function renderResults(results){
   currentResults = results;
@@ -350,7 +355,48 @@ function renderResults(results){
 
   document.getElementById('results-summary-text').textContent =
     `Found ${total} dead code item${total!==1?'s':''} — ${func} function${func!==1?'s':''}, ${varC} variable${varC!==1?'s':''}, ${imp} import${imp!==1?'s':''}.`;
+  renderScoreRing(window._lastScore || 100);
+  function renderScoreRing(score){
+  const existing = document.getElementById('score-ring-wrap');
+  if(existing) existing.remove();
 
+  const color = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--orange)' : 'var(--red)';
+  const label = score >= 80 ? 'Excellent — minimal dead code' : score >= 50 ? 'Moderate — some cleanup needed' : 'Poor — significant dead code found';
+  const circumference = 2 * Math.PI * 36;
+  const offset = circumference - (score / 100) * circumference;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'score-ring-wrap';
+  wrap.className = 'score-ring-wrap';
+  wrap.innerHTML = `
+    <svg class="score-ring-svg" width="100" height="100" viewBox="0 0 100 100">
+      <circle class="score-circle-bg" cx="50" cy="50" r="36"/>
+      <circle class="score-circle-fg" cx="50" cy="50" r="36"
+        style="stroke:${color}; stroke-dasharray:${circumference}; stroke-dashoffset:${circumference};"
+        id="score-arc"/>
+      <text x="50" y="46" text-anchor="middle"
+        style="font-family:var(--font-head);font-size:18px;font-weight:900;fill:${color}">${score}</text>
+      <text x="50" y="62" text-anchor="middle"
+        style="font-family:var(--font-mono);font-size:9px;fill:var(--text3)">/ 100</text>
+    </svg>
+    <div class="score-ring-info">
+      <div class="score-ring-label">Code Quality Score</div>
+      <div class="score-ring-value" style="color:${color}">${score}<span style="font-size:20px;color:var(--text3)">/100</span></div>
+      <div class="score-ring-desc">${label}</div>
+    </div>
+    <button class="btn-tool purple" onclick="openSideBySide()" style="flex-shrink:0">
+      <i class="fa fa-columns"></i> Side by Side View
+    </button>
+  `;
+
+  const summaryEl = document.querySelector('.results-summary');
+  summaryEl.parentNode.insertBefore(wrap, summaryEl);
+
+  setTimeout(() => {
+    const arc = document.getElementById('score-arc');
+    if(arc) arc.style.strokeDashoffset = offset;
+  }, 100);
+}
   if(results.length === 0){
     body.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa fa-check-circle" style="color:var(--green);opacity:1"></i>No dead code found. Your code is clean!</div></td></tr>`;
     return;
@@ -521,6 +567,143 @@ function showToast(msg, icon='fa-check-circle'){
 // ─────────────────────────────────────────────
 function escHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// ─────────────────────────────────────────────
+// SIDE BY SIDE VIEW
+// ─────────────────────────────────────────────
+function openSideBySide(){
+  const deadNames = currentResults.map(r => r.name);
+  const origEl = document.getElementById('sbs-original');
+  const cleanEl = document.getElementById('sbs-cleaned');
+
+  const origLines = currentOriginalCode.split('\n');
+  origEl.innerHTML = origLines.map(line => {
+    const isDead = deadNames.some(name =>
+      line.includes(name) &&
+      (line.trim().startsWith('import') ||
+       line.trim().startsWith('def ') ||
+       line.trim().match(new RegExp(`^${name}\\s*=`)))
+    );
+    return isDead
+      ? `<span class="sbs-line-dead">${escHtml(line) || ' '}</span>`
+      : `<span class="sbs-line-live">${escHtml(line) || ' '}</span>`;
+  }).join('');
+
+  const cleanLines = currentCleanedCode.split('\n');
+  cleanEl.innerHTML = cleanLines.map(line =>
+    `<span class="sbs-line-clean">${escHtml(line) || ' '}</span>`
+  ).join('');
+
+  navigate('sidebyside');
+}
+
+function downloadCleaned(){
+  if(!currentCleanedCode){ showToast('No cleaned code available', 'fa-triangle-exclamation'); return; }
+  const blob = new Blob([currentCleanedCode], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cleaned_code.py';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Cleaned file downloaded!', 'fa-check-circle');
+}
+
+// ─────────────────────────────────────────────
+// HISTORY DASHBOARD
+// ─────────────────────────────────────────────
+let selectedHistoryIds = new Set();
+
+async function loadHistory(){
+  try {
+    const res = await fetch('/history');
+    const data = await res.json();
+    const rows = data.history || [];
+
+    document.getElementById('hist-total').textContent = rows.length;
+    const avgScore = rows.length ? Math.round(rows.reduce((a,r) => a + r.score, 0) / rows.length) : 0;
+    document.getElementById('hist-avg-score').textContent = avgScore;
+    const totalIssues = rows.reduce((a,r) => a + r.total_issues, 0);
+    document.getElementById('hist-issues').textContent = totalIssues;
+    const cleanScans = rows.filter(r => r.total_issues === 0).length;
+    document.getElementById('hist-clean').textContent = cleanScans;
+
+    const tbody = document.getElementById('history-body');
+    const selectAll = document.getElementById('history-select-all');
+    if(!rows.length){
+      selectedHistoryIds.clear();
+      if(selectAll) selectAll.checked = false;
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa fa-clock"></i>No history yet. Run your first analysis!</div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map((r, i) => {
+      const scoreClass = r.score >= 80 ? 'high' : r.score >= 50 ? 'mid' : 'low';
+      const checked = selectedHistoryIds.has(r.id) ? 'checked' : '';
+      return `<tr style="animation: slide-in 0.3s ${i*0.05}s ease both; opacity:0">
+        <td><input class="history-row-checkbox" type="checkbox" data-id="${r.id}" onchange="onHistoryCheckboxChange(event, ${r.id})" ${checked}></td>
+        <td><span class="result-name">${escHtml(r.filename)}</span></td>
+        <td><span class="score-badge ${scoreClass}">${r.score}</span></td>
+        <td><span style="color:var(--orange)">${r.total_issues} issue${r.total_issues!==1?'s':''}</span></td>
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">${escHtml(r.language)}</span></td>
+        <td><span style="font-family:var(--font-mono);font-size:12px;color:var(--text3)">${escHtml(r.created_at)}</span></td>
+      </tr>`;
+    }).join('');
+
+    if(selectAll) {
+      const all = rows.length;
+      const checked = rows.filter(r=>selectedHistoryIds.has(r.id)).length;
+      selectAll.checked = all > 0 && checked === all;
+    }
+  } catch(e){
+    showToast('Could not load history', 'fa-circle-xmark');
+  }
+}
+
+function onHistoryCheckboxChange(event, id){
+  const checked = event.target.checked;
+  if(checked) selectedHistoryIds.add(id);
+  else selectedHistoryIds.delete(id);
+
+  const checkboxes = document.querySelectorAll('.history-row-checkbox');
+  const allChecked = checkboxes.length > 0 && [...checkboxes].every(cb => cb.checked);
+  const selectAll = document.getElementById('history-select-all');
+  if(selectAll) selectAll.checked = allChecked;
+}
+
+function toggleAllHistorySelection(checked){
+  selectedHistoryIds.clear();
+  document.querySelectorAll('.history-row-checkbox').forEach(cb => {
+    cb.checked = checked;
+    if(checked) selectedHistoryIds.add(Number(cb.dataset.id));
+  });
+}
+
+async function deleteSelectedHistory(){
+  if(!selectedHistoryIds.size){
+    showToast('Select at least one history item.', 'fa-triangle-exclamation');
+    return;
+  }
+
+  if(!confirm(`Delete ${selectedHistoryIds.size} selected history item${selectedHistoryIds.size!==1?'s':''}? This cannot be undone.`)){
+    return;
+  }
+
+  try {
+    const res = await fetch('/history/delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ids: [...selectedHistoryIds]})
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Delete failed');
+
+    selectedHistoryIds.clear();
+    const selectAll = document.getElementById('history-select-all');
+    if(selectAll) selectAll.checked = false;
+    showToast(`${data.deleted || 0} history item${(data.deleted||0)!==1?'s':''} deleted`, 'fa-check-circle');
+    loadHistory();
+  } catch(e){
+    showToast(e.message, 'fa-circle-xmark');
+  }
 }
 
 // Init line numbers
