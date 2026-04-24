@@ -95,18 +95,53 @@
 // NAVIGATION
 // ─────────────────────────────────────────────
 const pages = ['home','analyzer','results','ai','about'];
-function navigate(page){
+
+function getPageFromUrl(){
+  const params = new URLSearchParams(window.location.search);
+  const page = params.get('page');
+  return pages.includes(page) ? page : 'home';
+}
+
+function updateHistoryState(page, replace = false){
+  const url = page === 'home' ? '/' : `?page=${encodeURIComponent(page)}`;
+  const state = { page };
+  if(replace){
+    window.history.replaceState(state, '', url);
+  } else {
+    window.history.pushState(state, '', url);
+  }
+}
+
+function navigate(page, pushState = true){
+  if(!pages.includes(page)) page = 'home';
+
   pages.forEach(p => {
     const el = document.getElementById('page-'+p);
     if(el) el.classList.remove('active');
     const nl = document.getElementById('nav-'+p);
     if(nl) nl.classList.remove('active');
   });
+
   const target = document.getElementById('page-'+page);
   if(target){ target.classList.add('active'); window.scrollTo({top:0, behavior:'smooth'}); }
   const navLink = document.getElementById('nav-'+page);
   if(navLink) navLink.classList.add('active');
+
+  if(pushState){
+    updateHistoryState(page);
+  }
 }
+
+window.addEventListener('popstate', event => {
+  const page = event.state?.page || getPageFromUrl();
+  navigate(page, false);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const initialPage = getPageFromUrl();
+  navigate(initialPage, false);
+  updateHistoryState(initialPage, true);
+});
 
 // ─────────────────────────────────────────────
 // ANALYZER LOGIC
