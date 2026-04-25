@@ -68,7 +68,12 @@ def analyze():
         source_code = file.read().decode("utf-8")
 
     try:
-        results, score, cleaned_code = analyze_code(source_code)
+        if language == 'python':
+            results, score, cleaned_code = analyze_code(source_code)
+        else:
+            results = []
+            score = 100
+            cleaned_code = source_code
     except Exception as exc:
         return jsonify({"error": "Analysis failed", "details": str(exc)}), 500
 
@@ -142,6 +147,85 @@ Please explain: 1. Why this is a problem 2. How to fix it 3. Best practice to av
         model="llama3-8b-8192",
     )
     return jsonify({"explanation": chat_completion.choices[0].message.content})
+
+@app.route("/push-to-github", methods=["POST"])
+def push_to_github():
+    try:
+        from github import Github, GithubException
+        data = request.get_json() or {}
+        token = data.get("token", "").strip()
+        repo_name = data.get("repo", "").strip()
+        filename = data.get("filename", "cleaned_code.py").strip()
+        cleaned_code = data.get("cleaned_code", "").strip()
+        commit_msg = data.get("message", "RefineX: Remove dead code").strip()
+
+        if not token:
+            return jsonify({"error": "GitHub token is required"}), 400
+        if not repo_name:
+            return jsonify({"error": "Repository name is required"}), 400
+        if not cleaned_code:
+            return jsonify({"error": "No cleaned code to push"}), 400
+
+        g = Github(token)
+        user = g.get_user()
+
+        try:
+            repo = user.get_repo(repo_name)
+        except GithubException:
+            return jsonify({"error": f"Repository '{repo_name}' not found"}), 404
+
+        try:
+            existing = repo.get_contents(filename)
+            repo.update_file(
+                path=filename,
+                message=commit_msg,
+                content=cleaned_code,
+                sha=existing.sha
+            )
+            action = "updated"
+        except GithubException:
+            repo.create_file(
+                path=filename,
+                message=commit_msg,
+                content=cleaned_code
+            )
+            action = "created"
+
+        return jsonify({
+            "success": True,
+            "action": action,
+            "repo": repo.full_name,
+            "file": filename,
+            "url": f"https://github.com/{repo.full_name}/blob/main/{filename}"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/save-history", methods=["POST"])
+def save_history():
+    try:
+        data = request.get_json() or {}
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute('''INSERT INTO history
+                (filename, language, score, total_issues, dead_functions,
+                 dead_variables, dead_imports, results, cleaned_code, original_code, created_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
+                (data.get('filename', 'pasted_code'),
+                 data.get('language', 'unknown'),
+                 data.get('score', 100),
+                 data.get('total_issues', 0),
+                 data.get('dead_functions', 0),
+                 data.get('dead_variables', 0),
+                 data.get('dead_imports', 0),
+                 data.get('results', '[]'),
+                 data.get('cleaned_code', ''),
+                 data.get('original_code', ''),
+                 datetime.now().strftime("%Y-%m-%d %H:%M")))
+            conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     init_db()

@@ -911,3 +911,115 @@ body:hover #cursor-ring { opacity: 1; }
   .sbs-wrap { grid-template-columns: 1fr; }
   .score-ring-wrap { flex-direction: column; text-align: center; }
 }
+/* ─────────────────────────────────────────────
+   GITHUB PUSH PAGE
+───────────────────────────────────────────── */
+.github-push-wrap { display: flex; flex-direction: column; gap: 24px; }
+
+.github-status-banner {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg3);
+  animation: slide-in 0.3s ease both;
+}
+.gh-status-icon { font-size: 20px; flex-shrink: 0; }
+.gh-status-text { font-size: 14px; color: var(--text2); }
+
+.github-form-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px; display: flex;
+  flex-direction: column; gap: 24px;
+}
+.github-form-header {
+  display: flex; align-items: center; gap: 16px;
+  padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.github-form-title {
+  font-family: var(--font-head); font-size: 16px; font-weight: 700;
+  color: var(--text); letter-spacing: 1px;
+}
+.github-form-sub { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+.gh-field { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.gh-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.gh-label {
+  font-family: var(--font-head); font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; color: var(--text2); text-transform: uppercase;
+}
+.gh-input-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.gh-input-icon {
+  position: absolute; left: 14px; color: var(--text3); font-size: 13px;
+  pointer-events: none;
+}
+.gh-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 12px 16px 12px 40px;
+  color: var(--text); font-family: var(--font-mono); font-size: 13px;
+  outline: none; transition: all var(--transition);
+}
+.gh-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(64,180,255,0.1); }
+.gh-input::placeholder { color: var(--text3); }
+.gh-toggle-pass {
+  position: absolute; right: 12px; background: none; border: none;
+  color: var(--text3); cursor: pointer; padding: 4px;
+  transition: color 0.2s;
+}
+.gh-toggle-pass:hover { color: var(--cyan); }
+.gh-hint {
+  font-size: 11px; color: var(--text3); line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.gh-hint i { margin-top: 2px; flex-shrink: 0; }
+.gh-hint code {
+  font-family: var(--font-mono); background: var(--metal);
+  padding: 1px 5px; border-radius: 3px; color: var(--cyan);
+}
+
+.gh-preview {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.gh-preview-label {
+  font-family: var(--font-mono); font-size: 10px; color: var(--text3);
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
+}
+.gh-preview-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.gh-preview-key { font-size: 13px; color: var(--text2); }
+.gh-preview-val {
+  font-family: var(--font-head); font-size: 13px; font-weight: 700;
+  color: var(--cyan);
+}
+
+.gh-success-card {
+  background: linear-gradient(135deg, rgba(16,255,160,0.06), rgba(64,180,255,0.04));
+  border: 1px solid rgba(16,255,160,0.3); border-radius: 12px;
+  padding: 40px; text-align: center;
+  animation: slide-in 0.4s ease both;
+}
+.gh-success-icon { font-size: 48px; color: var(--green); margin-bottom: 16px; }
+.gh-success-title {
+  font-family: var(--font-head); font-size: 24px; font-weight: 900;
+  color: var(--text); letter-spacing: 1px; margin-bottom: 8px;
+}
+.gh-success-sub { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+.gh-success-link {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--metal); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 12px 24px;
+  font-family: var(--font-head); font-size: 12px; font-weight: 700;
+  letter-spacing: 1.5px; color: var(--cyan); cursor: pointer;
+  transition: all var(--transition); text-decoration: none;
+}
+.gh-success-link:hover {
+  border-color: var(--cyan); background: rgba(64,180,255,0.08);
+  transform: translateY(-2px); box-shadow: 0 0 20px rgba(64,180,255,0.2);
+}
+
+@media (max-width: 768px) {
+  .gh-field-row { grid-template-columns: 1fr; }
+}

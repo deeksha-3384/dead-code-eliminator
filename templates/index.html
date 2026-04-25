@@ -73,6 +73,9 @@
     <div class="nav-link" id="nav-ai" onclick="navigate('ai')">AI</div>
     <div class="nav-link" id="nav-about" onclick="navigate('about')">About</div>
     <div class="nav-link" id="nav-history" onclick="navigate('history'); loadHistory();">History</div>
+    <div class="nav-link" id="nav-github" onclick="navigate('github'); initGithubPage();">
+      <i class="fa-brands fa-github"></i> Push
+    </div>
   </div>
 </nav>
 
@@ -342,9 +345,15 @@
       </table>
     </div>
 
-    <div style="display:flex; gap: 12px; flex-wrap:wrap">
+    <div style="display:flex; gap: 12px; flex-wrap:wrap; margin-top: 8px;">
       <button class="btn-primary" onclick="navigate('analyzer')" style="font-size:12px; padding:13px 30px;">
         <i class="fa fa-plus"></i><span>New Analysis</span>
+      </button>
+      <button class="btn-primary" onclick="openSideBySide()" style="font-size:12px; padding:13px 30px; background: linear-gradient(135deg, #10ffa0 0%, #00d4ff 100%);">
+        <i class="fa fa-columns"></i><span>Side by Side View</span>
+      </button>
+      <button class="btn-primary" onclick="navigate('github'); initGithubPage();" style="font-size:12px; padding:13px 30px; background: linear-gradient(135deg, #8b5cf6 0%, #40b4ff 100%);">
+        <i class="fa-brands fa-github"></i><span>Clean & Push to GitHub</span>
       </button>
     </div>
   </div>
@@ -428,7 +437,133 @@
     </div>
   </div>
 </div>
+<!-- ══════════════════════════════════════════
+   GITHUB PUSH PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-github">
+  <div class="results-wrap">
+    <div class="back-btn" onclick="navigate('sidebyside')">
+      <i class="fa fa-arrow-left"></i> Back to Side by Side
+    </div>
+    <div class="section-label">GitHub Integration</div>
+    <h1 class="page-title">Push to GitHub</h1>
+    <p class="page-sub">Push your cleaned code directly to a GitHub repository. Dead code removed. Clean commit. Done.</p>
 
+    <div class="github-push-wrap">
+
+      <!-- Status Banner -->
+      <div class="github-status-banner" id="gh-status-banner" style="display:none;">
+        <div class="gh-status-icon" id="gh-status-icon"></div>
+        <div class="gh-status-text" id="gh-status-text"></div>
+      </div>
+
+      <!-- Form -->
+      <div class="github-form-card">
+        <div class="github-form-header">
+          <i class="fa-brands fa-github" style="font-size:24px; color:var(--cyan)"></i>
+          <div>
+            <div class="github-form-title">Repository Details</div>
+            <div class="github-form-sub">Your token is never stored — only used for this push</div>
+          </div>
+        </div>
+
+        <div class="gh-field">
+          <label class="gh-label">GitHub Personal Access Token</label>
+          <div class="gh-input-wrap">
+            <i class="fa fa-key gh-input-icon"></i>
+            <input type="password" id="gh-token" class="gh-input"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              oninput="validateGhForm()">
+            <button class="gh-toggle-pass" onclick="toggleTokenVisibility()" title="Show/hide token">
+              <i class="fa fa-eye" id="gh-eye-icon"></i>
+            </button>
+          </div>
+          <div class="gh-hint">
+            <i class="fa fa-circle-info"></i>
+            Generate at <strong>GitHub → Settings → Developer Settings → Personal Access Tokens</strong>. Needs <code>repo</code> scope.
+          </div>
+        </div>
+
+        <div class="gh-field-row">
+          <div class="gh-field">
+            <label class="gh-label">Repository Name</label>
+            <div class="gh-input-wrap">
+              <i class="fa fa-code-branch gh-input-icon"></i>
+              <input type="text" id="gh-repo" class="gh-input"
+                placeholder="my-project"
+                oninput="validateGhForm()">
+            </div>
+            <div class="gh-hint"><i class="fa fa-circle-info"></i> Just the repo name, not the full URL</div>
+          </div>
+
+          <div class="gh-field">
+            <label class="gh-label">Filename in Repo</label>
+            <div class="gh-input-wrap">
+              <i class="fa fa-file-code gh-input-icon"></i>
+              <input type="text" id="gh-filename" class="gh-input"
+                value="cleaned_code.py"
+                oninput="validateGhForm()">
+            </div>
+            <div class="gh-hint"><i class="fa fa-circle-info"></i> Path where file will be created or updated</div>
+          </div>
+        </div>
+
+        <div class="gh-field">
+          <label class="gh-label">Commit Message</label>
+          <div class="gh-input-wrap">
+            <i class="fa fa-message gh-input-icon"></i>
+            <input type="text" id="gh-commit-msg" class="gh-input"
+              value="RefineX: Remove dead code"
+              oninput="validateGhForm()">
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="gh-preview" id="gh-preview">
+          <div class="gh-preview-label">Push Preview</div>
+          <div class="gh-preview-row">
+            <span class="gh-preview-key">Lines removed</span>
+            <span class="gh-preview-val" id="prev-lines-removed">—</span>
+          </div>
+          <div class="gh-preview-row">
+            <span class="gh-preview-key">Original lines</span>
+            <span class="gh-preview-val" id="prev-lines-orig">—</span>
+          </div>
+          <div class="gh-preview-row">
+            <span class="gh-preview-key">Cleaned lines</span>
+            <span class="gh-preview-val" id="prev-lines-clean">—</span>
+          </div>
+          <div class="gh-preview-row">
+            <span class="gh-preview-key">Dead code removed</span>
+            <span class="gh-preview-val" id="prev-issues" style="color:var(--green)">—</span>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
+          <button class="btn-analyze" id="gh-push-btn" onclick="pushToGitHub()" disabled
+            style="padding:14px 36px; font-size:12px;">
+            <i class="fa-brands fa-github"></i>
+            <span>Push Cleaned Code</span>
+          </button>
+          <button class="btn-tool purple" onclick="navigate('sidebyside')">
+            <i class="fa fa-eye"></i> View Diff
+          </button>
+        </div>
+      </div>
+
+      <!-- Success Card (hidden by default) -->
+      <div class="gh-success-card" id="gh-success-card" style="display:none;">
+        <div class="gh-success-icon"><i class="fa fa-check-circle"></i></div>
+        <div class="gh-success-title">Successfully Pushed!</div>
+        <div class="gh-success-sub" id="gh-success-sub">Your cleaned code is now live on GitHub.</div>
+        <a class="gh-success-link" id="gh-success-link" href="#" target="_blank">
+          <i class="fa-brands fa-github"></i> View on GitHub
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
 <!-- ══════════════════════════════════════════
    SIDE BY SIDE PAGE
 ══════════════════════════════════════════ -->
@@ -462,6 +597,10 @@
       </button>
       <button class="btn-tool purple" onclick="navigate('results')">
         <i class="fa fa-table"></i> Back to Results
+      </button>
+      <button class="btn-tool" onclick="navigate('github'); initGithubPage();"
+        style="border-color:rgba(64,180,255,0.5); color:var(--cyan)">
+        <i class="fa-brands fa-github"></i> Push to GitHub
       </button>
     </div>
   </div>
